@@ -51,7 +51,21 @@ expl1 = rda_output.proportion_explained.iloc[0] * 100
 expl2 = rda_output.proportion_explained.iloc[1] * 100
 var_grafico = expl1 + expl2
 
-# B. Permutación de Monte Carlo Global (999 Permutaciones)
+# B. Cálculo del Estadístico Pseudo-F Global
+ss_constrained = rda_output.constrained_eigenvalues.sum()
+ss_unconstrained = rda_output.unconstrained_eigenvalues.sum()
+
+k = df_env_std.shape[1]  # Número de variables ambientales
+n = df_bio_clr.shape[0]  # Número de muestras (11 capas)
+
+# Grados de libertad (ajustados si el modelo es saturado o de bajo N)
+df_model = k
+df_residual = max(1, n - k - 1)
+
+# Pseudo-F = (Suma de Cuadrados Explicada / df_modelo) / (Suma de Cuadrados Residual / df_residual)
+pseudo_F_obs = (ss_constrained / df_model) / (ss_unconstrained / df_residual)
+
+# C. Permutación de Monte Carlo Global (999 Permutaciones)
 n_permutaciones = 999
 contador_r2_mayor = 0
 np.random.seed(42)  # Reproducibilidad
@@ -67,7 +81,7 @@ for _ in range(n_permutaciones):
 
 p_val_global = (contador_r2_mayor + 1) / (n_permutaciones + 1)
 
-# C. Pruebas Marginales Permutacionales por Variable (Tabla S1)
+# D. Pruebas Marginales Permutacionales por Variable (Tabla S1)
 resultados_variables = {}
 for var in cols_ambientales:
     contador_var = 0
@@ -83,8 +97,9 @@ for var in cols_ambientales:
 
 # Imprimir reporte formal y limpio en la consola
 print("\n" + "="*60)
-print("              REPORTE ESTADÍSTICO RDA (FULL MODEL)")
+print("             REPORTE ESTADÍSTICO RDA (FULL MODEL)")
 print("="*60)
+print(f"Estadístico Pseudo-F Global                   : {pseudo_F_obs:.4f}")
 print(f"Varianza Representada en Gráfico (RDA1 + RDA2): {var_grafico:.2f}%")
 print(f"  -> RDA1: {expl1:.2f}% | RDA2: {expl2:.2f}%")
 print(f"Valor de p Global (Monte Carlo 999 perm)      : {p_val_global:.4f}")
